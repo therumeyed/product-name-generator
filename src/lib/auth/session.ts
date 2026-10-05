@@ -2,7 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { Role } from "@prisma/client";
 import { db } from "../db";
-import { env } from "../env";
+import { authSecret } from "../env";
 
 export const SESSION_COOKIE = "pno_session";
 const SESSION_HOURS = 12;
@@ -16,7 +16,7 @@ export type SessionUser = {
   brandName: string | null;
 };
 
-const key = () => new TextEncoder().encode(env().AUTH_SECRET);
+const key = () => new TextEncoder().encode(authSecret());
 
 export async function createSessionToken(userId: string, sessionVersion: number) {
   return new SignJWT({ sv: sessionVersion })

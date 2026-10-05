@@ -112,3 +112,13 @@ describe("user creation rules", () => {
     expect(u.passwordHash.startsWith("$2")).toBe(true);
   });
 });
+
+describe("login does not depend on provider settings", () => {
+  it("signs in even when live-mode provider keys are missing", async () => {
+    await mk("nokeys");
+    const saved = { ...process.env };
+    process.env.PROVIDER_MODE = "live";
+    delete process.env.ANTHROPIC_API_KEY; delete process.env.ANTHROPIC_MODEL; delete process.env.DATAFORSEO_LOGIN; delete process.env.DATAFORSEO_PASSWORD;
+    try { expect((await attemptLogin("nokeys", PW)).ok).toBe(true); } finally { process.env = saved; }
+  });
+});

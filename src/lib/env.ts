@@ -38,3 +38,13 @@ export function env(): Env {
   cached = e;
   return e;
 }
+
+/**
+ * Login only needs AUTH_SECRET. Kept separate from env() so a missing or misnamed provider key
+ * can never stop people signing in (it only affects generating names).
+ */
+export function authSecret(): string {
+  const v = process.env.AUTH_SECRET;
+  if (!v || v.length < 32) throw new Error("AUTH_SECRET must be set to at least 32 characters");
+  return v;
+}
