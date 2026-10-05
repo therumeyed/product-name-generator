@@ -1,0 +1,18 @@
+:root { --bg:#fafaf9; --fg:#1c1917; --muted:#78716c; --line:#e7e5e4; --accent:#1c1917; --err:#b91c1c; }
+@media (prefers-color-scheme: dark) { :root { --bg:#141210; --fg:#f5f5f4; --muted:#a8a29e; --line:#2e2a27; --accent:#f5f5f4; --err:#f87171; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+main { max-width: 880px; margin: 0 auto; padding: 24px 16px; }
+header.bar { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); }
+header.bar nav { display:flex; gap:16px; align-items:center; }
+a { color: inherit; }
+label { display:block; font-size:13px; color:var(--muted); margin:12px 0 4px; }
+input, select, button { font:inherit; padding:9px 12px; border:1px solid var(--line); border-radius:6px; background:transparent; color:inherit; width:100%; }
+button { background:var(--accent); color:var(--bg); border-color:var(--accent); cursor:pointer; width:auto; }
+button:disabled { opacity:.5; cursor:default; }
+button.link { background:none; color:var(--muted); border:none; padding:0; }
+.card { border:1px solid var(--line); border-radius:10px; padding:20px; }
+.err { color:var(--err); font-size:14px; }
+.muted { color:var(--muted); }
+table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); font-size:14px; }
+code { background:var(--line); padding:2px 6px; border-radius:4px; }

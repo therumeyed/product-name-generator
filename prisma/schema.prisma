@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner // platform operator: manages all brands and users
+  admin // brand admin: datasets, brand settings, history
+  buyer
+}
+
+enum DatasetStatus {
+  uploading
+  validating
+  ready
+  active
+  failed
+  archived
+}
+
+enum FeedbackOutcome {
+  used
+  edited
+  rejected
+}
+
+model Brand {
+  id                     String   @id @default(uuid())
+  name                   String
+  slug                   String   @unique
+  country                String   @default("AU")
+  language               String   @default("en")
+  settings               Json     @default("{}")
+  activeKeywordDatasetId String?  @unique
+  active                 Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  users          User[]
+  datasets       KeywordDataset[] @relation("BrandDatasets")
+  activeDataset  KeywordDataset?  @relation("ActiveDataset", fields: [activeKeywordDatasetId], references: [id])
+  generations    Generation[]
+  auditEvents    AuditEvent[]
+}
+
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique // stored lowercase; assigned by the owner, never self-service
+  displayName  String
+  email        String?
+  passwordHash String
+  role         Role      @default(buyer)
+  brandId      String?
+  active       Boolean   @default(true)
+  // Bump to invalidate every session this user holds (password reset, disable, forced logout)
+  sessionVersion Int      @default(0)
+  failedLogins   Int      @default(0)
+  lockedUntil    DateTime?
+  lastLoginAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  brand       Brand?       @relation(fields: [brandId], references: [id])
+  generations Generation[]
+  feedback    Feedback[]
+  auditEvents AuditEvent[]
+
+  @@index([brandId])
+}
+
+model KeywordDataset {
+  id               String        @id @default(uuid())
+  brandId          String
+  name             String
+  originalFilename String?
+  status           DatasetStatus @default(uploading)
+  rowsAccepted     Int           @default(0)
+  rowsRejected     Int           @default(0)
+  rowsDuplicate    Int           @default(0)
+  validationSummary Json         @default("{}")
+  uploadedById     String?
+  createdAt        DateTime      @default(now())
+  activatedAt      DateTime?
+
+  brand    Brand     @relation("BrandDatasets", fields: [brandId], references: [id])
+  activeFor Brand?   @relation("ActiveDataset")
+  keywords Keyword[]
+
+  @@index([brandId, status])
+}
+
+model Keyword {
+  id                String   @id @default(uuid())
+  datasetId         String
+  originalKeyword   String
+  normalizedKeyword String
+  searchVolume      Int?
+  category          String?
+  subcategory       String?
+  competition       Float?
+  cpc               Float?
+  intent            String?
+  country           String?
+  language          String?
+  source            String?
+  sourceUpdatedAt   DateTime?
+  metadata          Json     @default("{}")
+
+  dataset KeywordDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  // GIN full-text and trigram indexes are created in raw SQL migrations (Prisma can't express them)
+  @@unique([datasetId, normalizedKeyword, country, language])
+  @@index([datasetId])
+}
+
+model Generation {
+  id                String   @id @default(uuid())
+  brandId           String
+  userId            String
+  datasetId         String?
+  originalInput     Json
+  extractedFacts    Json?
+  candidateEvidence Json?
+  selectedQueries   Json?
+  result            Json?
+  confidence        String?
+  status            String   @default("pending")
+  errorCode         String?
+  promptVersions    Json?
+  modelName         String?
+  durationMs        Int?
+  usage             Json?
+  createdAt         DateTime @default(now())
+
+  brand    Brand      @relation(fields: [brandId], references: [id])
+  user     User       @relation(fields: [userId], references: [id])
+  feedback Feedback[]
+
+  @@index([brandId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model SerpCache {
+  id              String   @id @default(uuid())
+  cacheKey        String   @unique
+  query           String
+  location        String
+  language        String
+  device          String
+  fetchedAt       DateTime @default(now())
+  expiresAt       DateTime
+  reducedResponse Json
+  providerStatus  String?
+  costUsd         Float?
+
+  @@index([expiresAt])
+}
+
+model Feedback {
+  id           String          @id @default(uuid())
+  generationId String
+  userId       String
+  outcome      FeedbackOutcome
+  finalTitle   String?
+  reason       String?
+  createdAt    DateTime        @default(now())
+
+  generation Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@index([generationId])
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  brandId    String?
+  userId     String?
+  eventType  String
+  targetType String?
+  targetId   String?
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  brand Brand? @relation(fields: [brandId], references: [id])
+  user  User?  @relation(fields: [userId], references: [id])
+
+  @@index([brandId, createdAt])
+}

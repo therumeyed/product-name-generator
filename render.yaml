@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: product-name-optimiser
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npm run db:migrate
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: product-name-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: APP_BASE_URL
+        sync: false
+      - key: PROVIDER_MODE
+        value: live
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        sync: false
+      - key: DATAFORSEO_LOGIN
+        sync: false
+      - key: DATAFORSEO_PASSWORD
+        sync: false
+      - key: SERP_CACHE_TTL_DAYS
+        value: "7"
+      - key: MAX_SERP_QUERIES_PER_GENERATION
+        value: "3"
+
+databases:
+  - name: product-name-db
+    plan: basic-256mb
+    postgresMajorVersion: "16"
