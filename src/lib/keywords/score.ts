@@ -4,6 +4,7 @@ import {
 } from "../vocab/fashion";
 import type { ProductFacts } from "../providers/types";
 import { attributeTerms, type RawCandidate } from "./retrieve";
+import { inversions as learnedInversions, type OrderModel } from "./orderModel";
 
 export type Weights = { factRelevance: number; typeAndIntent: number; titleSuitability: number; demand: number; brandFit: number };
 export const DEFAULT_WEIGHTS: Weights = { factRelevance: 0.4, typeAndIntent: 0.2, titleSuitability: 0.15, demand: 0.15, brandFit: 0.1 };
@@ -16,7 +17,7 @@ export type ScoredKeyword = RawCandidate & {
   volumeAvailable: boolean;
 };
 
-export type BrandRules = { prohibitedTerms?: string[]; avoidWords?: string[]; attributeOrder?: string[] };
+export type BrandRules = { prohibitedTerms?: string[]; avoidWords?: string[]; attributeOrder?: string[]; orderModel?: OrderModel | null; category?: string | null };
 
 const toks = (s: string) => s.toLowerCase().split(/[^a-z0-9'$%]+/).filter(Boolean);
 const containsPhrase = (norm: string, phrase: string) => new RegExp(`(^|\\s)${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\s|$)`).test(norm);
@@ -70,12 +71,16 @@ export function scoreCandidate(c: RawCandidate, facts: ProductFacts, rules: Bran
   else if (kt.length > 5) titleSuitability *= 0.4;
   // Product noun should be the head (last) word: "wide leg pants outfit" is a search, not a title.
   if (hasType && singular(last) !== typeTok) { titleSuitability *= 0.5; flags.push("type_not_last"); }
-  const order = (rules.attributeOrder ?? CLASS_ORDER).filter((x): x is (typeof CLASS_ORDER)[number] => (CLASS_ORDER as string[]).includes(x));
-  // Soft order check, driven by the brand's attributeOrder setting: attributes in colour > feature > material > length order read like a PDP title.
-  const ranks = kt.map(classify).filter((c): c is NonNullable<ReturnType<typeof classify>> => c !== null).map((c) => order.indexOf(c));
-  let inversions = 0;
-  for (let i = 1; i < ranks.length; i++) if (ranks[i] < ranks[i - 1]) inversions++;
-  if (inversions) { titleSuitability *= Math.max(0.7, 0.92 ** inversions); flags.push("unnatural_order"); }
+  // Order fit. A brand's explicit attributeOrder wins; otherwise use the order learned from the keyword list.
+  let inv = 0;
+  const explicit = (rules.attributeOrder ?? []).filter((x): x is (typeof CLASS_ORDER)[number] => (CLASS_ORDER as string[]).includes(x));
+  if (explicit.length) {
+    const ranks = kt.map(classify).filter((c): c is NonNullable<ReturnType<typeof classify>> => c !== null).map((c) => explicit.indexOf(c));
+    for (let i = 1; i < ranks.length; i++) if (ranks[i] < ranks[i - 1]) inv++;
+  } else {
+    inv = learnedInversions(rules.orderModel ?? null, rules.category ?? null, kt.filter((t) => classify(t)));
+  }
+  if (inv) { titleSuitability *= Math.max(0.7, 0.92 ** inv); flags.push("unnatural_order"); }
 
   const expected = categoryForType(facts.product_type);
   const brandFit = !expected ? 0.5 : c.category === expected ? 1 : c.category ? 0.2 : 0.4;

@@ -5,8 +5,8 @@ const db = new PrismaClient();
 // Sensible defaults from brief section 19. Everything here is editable in brand settings later.
 const SPORTSGIRL_SETTINGS = {
   titleCase: "title",
+  // attributeOrder: leave unset to use the order learned from the active keyword dataset; set an array to override.
   maxTitleLength: 70,
-  attributeOrder: ["colour", "feature", "material", "length", "product_type"],
   requiredCoreTerms: [],
   allowedVocabulary: [],
   prohibitedTerms: [],

@@ -3,6 +3,7 @@ import { db } from "../db";
 import { cleanOriginal, normalizeKeyword, parseNumber } from "./normalize";
 import { combineVolumes, validateMapping, type ColumnMapping, type VolumeRule } from "./mapping";
 import type { RowSource } from "./readers";
+import { OrderAccumulator } from "./orderModel";
 
 const BATCH = 2000;
 const EXTREME_VOLUME = 10_000_000;
@@ -50,6 +51,7 @@ export async function importKeywords(opts: {
     if (w.sampleRows.length < SAMPLE_CAP) w.sampleRows.push(row);
   };
 
+  const order = new OrderAccumulator();
   const seen = new Map<string, number>(); // dedupe key -> first row number
   let kwBatch: Prisma.KeywordCreateManyInput[] = [];
   let rejBatch: Prisma.DatasetRejectionCreateManyInput[] = [];
@@ -136,6 +138,7 @@ export async function importKeywords(opts: {
         sourceUpdatedAt,
         metadata: metadata as Prisma.InputJsonValue,
       });
+      order.add(normalized, str("category"), searchVolume);
       accepted++;
       if (kwBatch.length >= BATCH) await flush();
     }
@@ -150,7 +153,7 @@ export async function importKeywords(opts: {
         rowsAccepted: accepted,
         rowsRejected: rejected,
         rowsDuplicate: duplicates,
-        validationSummary: { warnings, volumeRule: opts.volumeRule, mapping: opts.mapping } as unknown as Prisma.InputJsonValue,
+        validationSummary: { warnings, volumeRule: opts.volumeRule, mapping: opts.mapping, orderModel: order.finalize() } as unknown as Prisma.InputJsonValue,
       },
     });
     await db.auditEvent.create({

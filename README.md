@@ -52,6 +52,7 @@ npm run dataset:import -- --brand sportsgirl --file ./keywords.xlsx --sheet "Gen
 
 **Retrieval + scoring** (`src/lib/keywords/`): Postgres full-text + trigram pull ~100-400 candidates, code scores them
 (40% fact relevance, 20% product type + intent, 15% title suitability, 15% log-scaled demand, 10% category fit) and keeps the top 30.
+**Attribute order is learned, not configured.** At import we measure, per word, where it sits among the other attribute words in your real keywords (volume-weighted), plus head-to-head word-pair evidence, per category where there's enough data. e.g. colours lead; "slip", "crossbody" and "wedding" hug the product noun; "leather" comes before "platform" in shoes. It's stored with the dataset version. A brand can still force an order with `attributeOrder` in settings.
 Keywords with a colour/material/audience term the buyer didn't supply are excluded outright. Weights and attribute order are configurable.
 
 ## Tests
