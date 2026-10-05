@@ -8,7 +8,7 @@ export const GenerationInput = z.object({
   productType: z.string().trim().min(2).max(60),
   colour: field, material: field, pattern: field, fit: field, length: field,
   feature: field, occasion: field, audience: field,
-  extra: z.string().trim().max(500).optional(),
+  extra: z.string().trim().max(2000).optional(),
 });
 export type GenerationInput = z.infer<typeof GenerationInput>;
 

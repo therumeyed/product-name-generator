@@ -51,6 +51,8 @@ export default function GeneratorClient({ productTypes, brands, isAdmin }: { pro
     <>
       <form className="card" onSubmit={submit}>
         <p className="muted" style={{ margin: "0 0 4px" }}>Use only the details entered here. Anything left blank is treated as unknown, never guessed.</p>
+        {/* Owners aren't tied to a brand, so the brand is always sent: a picker if there are several, hidden if just one. */}
+        {brands.length === 1 && <input type="hidden" name="brandId" value={brands[0].id} />}
         {brands.length > 1 && (<><label>Brand</label><select name="brandId" required>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></>)}
         <label htmlFor="freeText">What would you call this product? *</label>
         <input id="freeText" name="freeText" required maxLength={500} placeholder="black dress with ruching, midi length, mesh sleeves" />
@@ -63,7 +65,7 @@ export default function GeneratorClient({ productTypes, brands, isAdmin }: { pro
           ))}
         </div>
         <label htmlFor="extra">Extra product facts</label>
-        <input id="extra" name="extra" maxLength={500} />
+        <input id="extra" name="extra" maxLength={2000} />
         <p><button disabled={busy}>{busy ? "Working…" : "Generate product name"}</button></p>
       </form>
 
