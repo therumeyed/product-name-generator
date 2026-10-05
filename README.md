@@ -3,7 +3,7 @@
 Evidence-led PDP product titles for retail brands. Built from the Claude build brief.
 First brand: Sportsgirl. Multi-brand from day one.
 
-**Status:** Phase 1 (foundation + client logins) done. Dataset admin, pipeline and buyer UI are Phases 2-4.
+**Status:** Phases 1-2 done (foundation, client logins, keyword datasets, retrieval + scoring). Recommendation pipeline and buyer UI are Phases 3-4.
 
 ## Stack
 Next.js 15 (TypeScript) · Prisma + PostgreSQL (`pg_trgm`, full-text) · Zod · jose + bcrypt · Vitest · Render.
@@ -36,8 +36,26 @@ npm run user:list
 Or use **Users** in the app when signed in as owner. Passwords are bcrypt-hashed; the plaintext is shown once and never stored.
 Usernames are case-insensitive. 5 failed logins locks the account for 15 minutes. Disabling a user or brand takes effect on their next request.
 
+## Keyword datasets
+Admin > **Datasets** (or CLI). CSV or XLSX, up to 30MB. Flow: upload, check column mapping, validate + import as a **new inactive version**, then activate.
+Uploads never overwrite the active dataset; a bad file leaves it untouched. Rolling back = activating an older version.
+
+```bash
+npm run dataset:import -- --brand sportsgirl --file ./keywords.xlsx --sheet "Generic Keywords" \
+  --name "Generic Oct 2026" --ignore "Source(s)" --activate
+```
+- Required column: `keyword`. Everything else optional. Unknown columns are kept in `metadata`; mark a column `ignore` to drop it.
+- **Several volume columns** (e.g. Ahrefs + Keyword Planner) are combined with a rule: `max` (default), `first_available`, or `sum`. Every raw value is kept on the keyword.
+  The two sources aren't like-for-like (Keyword Planner runs ~2.4x Ahrefs where both exist), so check the rule suits your list.
+- Blank volume = "volume unavailable", never 0. Duplicates (normalised keyword + country + language) are dropped, not merged, and listed in the rejected-rows download.
+- 65k rows import in ~17s.
+
+**Retrieval + scoring** (`src/lib/keywords/`): Postgres full-text + trigram pull ~100-400 candidates, code scores them
+(40% fact relevance, 20% product type + intent, 15% title suitability, 15% log-scaled demand, 10% category fit) and keeps the top 30.
+Keywords with a colour/material/audience term the buyer didn't supply are excluded outright. Weights and attribute order are configurable.
+
 ## Tests
-`npm run typecheck && npm run lint && npm test` (tests need Postgres at `DATABASE_URL` and wipe users/brands, so use a dev DB).
+`npm run typecheck && npm run lint && npm test`. Tests wipe data: set `TEST_DATABASE_URL` to a throwaway DB (CI uses its own empty one).
 
 ## Deploy (Render)
 Push to GitHub, create a Blueprint from `render.yaml`. Set the `sync: false` secrets in the dashboard

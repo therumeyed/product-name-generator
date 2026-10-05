@@ -11,6 +11,7 @@ export default async function Home() {
       <header className="bar">
         <strong>{process.env.APP_NAME ?? "Product Name Optimiser"}{user.brandName ? ` · ${user.brandName}` : ""}</strong>
         <nav>
+          {user.role !== "buyer" && <Link href="/admin/datasets">Datasets</Link>}
           {user.role === "owner" && <Link href="/admin/users">Users</Link>}
           <span className="muted">{user.displayName}</span>
           <SignOut />

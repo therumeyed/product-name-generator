@@ -19,11 +19,14 @@
     "user:reset": "tsx scripts/user.ts reset",
     "user:disable": "tsx scripts/user.ts disable",
     "user:enable": "tsx scripts/user.ts enable",
-    "user:list": "tsx scripts/user.ts list"
+    "user:list": "tsx scripts/user.ts list",
+    "dataset:import": "tsx scripts/dataset.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
+    "csv-parse": "^7.0.3",
+    "exceljs": "^4.4.0",
     "jose": "^6.2.12",
     "next": "^15.5.27",
     "react": "^19.3.0",

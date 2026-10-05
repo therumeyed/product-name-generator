@@ -4,15 +4,14 @@ import { db } from "@/lib/db";
 import { attemptLogin, MAX_FAILED_LOGINS } from "@/lib/auth/login";
 import { generatePassword, validatePassword, validateUsername } from "@/lib/auth/password";
 import { hasRole } from "@/lib/auth/guards";
+import { resetDb } from "./helpers";
 import { createUser, resetPassword, setUserActive, UserError } from "@/lib/users";
 
 let brandId: string;
 const PW = "correct-horse-battery";
 
 beforeAll(async () => {
-  await db.auditEvent.deleteMany();
-  await db.user.deleteMany();
-  await db.brand.deleteMany();
+  await resetDb();
   brandId = (await db.brand.create({ data: { name: "Test", slug: "test" } })).id;
 });
 beforeEach(async () => {
@@ -21,9 +20,7 @@ beforeEach(async () => {
   await db.brand.update({ where: { id: brandId }, data: { active: true } });
 });
 afterAll(async () => {
-  await db.auditEvent.deleteMany();
-  await db.user.deleteMany();
-  await db.brand.deleteMany();
+  await resetDb();
   await db.$disconnect();
 });
 

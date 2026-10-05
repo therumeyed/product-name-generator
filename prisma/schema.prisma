@@ -89,6 +89,7 @@ model KeywordDataset {
   brand    Brand     @relation("BrandDatasets", fields: [brandId], references: [id])
   activeFor Brand?   @relation("ActiveDataset")
   keywords Keyword[]
+  rejections DatasetRejection[]
 
   @@index([brandId, status])
 }
@@ -189,4 +190,17 @@ model AuditEvent {
   user  User?  @relation(fields: [userId], references: [id])
 
   @@index([brandId, createdAt])
+}
+
+model DatasetRejection {
+  id         String   @id @default(uuid())
+  datasetId  String
+  rowNumber  Int
+  keyword    String?
+  reason     String
+  raw        Json     @default("{}")
+
+  dataset KeywordDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([datasetId])
 }
