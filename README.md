@@ -3,7 +3,7 @@
 Evidence-led PDP product titles for retail brands. Built from the Claude build brief.
 First brand: Sportsgirl. Multi-brand from day one.
 
-**Status:** Phases 1-3 done (foundation, logins, keyword datasets, retrieval + scoring, recommendation pipeline). Buyer UI is Phase 4.
+**Status:** Phases 1-4 done (foundation, logins, keyword datasets, retrieval + scoring, recommendation pipeline, buyer UI). Brand-settings screen and ops hardening are Phase 5.
 
 ## Stack
 Next.js 15 (TypeScript) · Prisma + PostgreSQL (`pg_trgm`, full-text) · Zod · jose + bcrypt · Vitest · Render.

@@ -165,3 +165,13 @@ describe("authorisation", () => {
     expect(() => assertBrandAccess(u("owner", null), "b")).not.toThrow();
   });
 });
+
+describe("length words", () => {
+  it("excludes short/long phrases for a midi dress", () => {
+    const mk = (k: string) => ({ id: k, originalKeyword: k, normalizedKeyword: k, searchVolume: 100, category: "Dresses", subcategory: null, source: "exact" as const });
+    const f = { ...emptyFacts, product_type: "dress", colour: ["black"], length: ["midi"] };
+    expect(scoreCandidate(mk("short black dress"), f)?.flags.join()).toMatch(/unsupported_attribute:short/);
+    expect(scoreCandidate(mk("long black dress"), f)?.flags.join()).toMatch(/unsupported_attribute:long/);
+    expect(scoreCandidate(mk("black midi dress"), f)?.flags).toEqual([]);
+  });
+});

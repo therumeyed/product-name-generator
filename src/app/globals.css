@@ -16,3 +16,17 @@ button.link { background:none; color:var(--muted); border:none; padding:0; }
 .muted { color:var(--muted); }
 table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); font-size:14px; }
 code { background:var(--line); padding:2px 6px; border-radius:4px; }
+.row { display:grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+@media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+.badge { display:inline-block; padding:2px 10px; border-radius:99px; font-size:12px; font-weight:600; border:1px solid var(--line); }
+.badge.high { background:#dcfce7; color:#14532d; border-color:#bbf7d0; } .badge.medium { background:#fef9c3; color:#713f12; border-color:#fde68a; } .badge.low { background:#fee2e2; color:#7f1d1d; border-color:#fecaca; }
+@media (prefers-color-scheme: dark) { .badge.high { background:#14532d; color:#dcfce7; } .badge.medium { background:#713f12; color:#fef9c3; } .badge.low { background:#7f1d1d; color:#fee2e2; } }
+.title-out { font-size: 26px; font-weight: 650; line-height: 1.25; margin: 6px 0 10px; }
+.tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-top:16px; }
+.tabs button { background:none; color:var(--muted); border:none; border-bottom:2px solid transparent; border-radius:0; padding:8px 12px; }
+.tabs button.on { color:var(--fg); border-bottom-color:var(--fg); }
+button.ghost { background:transparent; color:var(--fg); border:1px solid var(--line); }
+.steps { list-style:none; padding:0; margin:12px 0 0; } .steps li { padding:4px 0; color:var(--muted); } .steps li.on { color:var(--fg); font-weight:600; } .steps li.done { text-decoration: line-through; opacity:.6; }
+.warn { background: color-mix(in srgb, #f59e0b 14%, transparent); border:1px solid color-mix(in srgb, #f59e0b 40%, transparent); border-radius:8px; padding:8px 12px; margin:6px 0; font-size:14px; }
+.alt { border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin:8px 0; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
