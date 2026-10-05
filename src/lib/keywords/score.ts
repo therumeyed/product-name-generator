@@ -19,7 +19,7 @@ export type ScoredKeyword = RawCandidate & {
 
 export type BrandRules = { prohibitedTerms?: string[]; avoidWords?: string[]; attributeOrder?: string[]; orderModel?: OrderModel | null; category?: string | null };
 
-const toks = (s: string) => s.toLowerCase().split(/[^a-z0-9'$%]+/).filter(Boolean);
+const toks = (s: string) => s.toLowerCase().replace(/'/g, "").split(/[^a-z0-9$%]+/).filter(Boolean); // women's -> womens
 const containsPhrase = (norm: string, phrase: string) => new RegExp(`(^|\\s)${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\s|$)`).test(norm);
 
 const ATTRIBUTE_VOCAB = new Set([...COLOURS, ...MATERIALS, ...LENGTHS, ...STYLES, ...OCCASIONS, ...AUDIENCE_TERMS].map(singular));

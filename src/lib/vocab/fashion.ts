@@ -66,3 +66,6 @@ export function classify(tok: string): AttrClass | null {
   if (STYLES.map(singular).includes(t) || OCCASIONS.map(singular).includes(t)) return "feature";
   return null;
 }
+
+/** Every word the vocabulary treats as a colour/material/length/style/occasion/audience attribute (singular). */
+export const ATTRIBUTE_VOCAB_TOKENS = new Set([...COLOURS, ...MATERIALS, ...LENGTHS, ...STYLES, ...OCCASIONS, ...AUDIENCE_TERMS].map(singular));

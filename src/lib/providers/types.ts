@@ -28,14 +28,23 @@ export type SerpResult = {
 
 export type SerpResponse = { query: string; checkedAt: string; results: SerpResult[]; costUsd?: number };
 
+export type AiUsage = { inputTokens: number; outputTokens: number };
+
+export class AiError extends Error {
+  constructor(message: string, public code: "ai_unavailable" | "ai_refusal" | "ai_invalid") {
+    super(message);
+  }
+}
+
 export interface FactExtractor {
-  extract(input: { freeText: string; fields: Record<string, string | undefined> }): Promise<ProductFacts>;
+  extract(input: { freeText: string; fields: Record<string, string | undefined> }): Promise<{ facts: ProductFacts; usage: AiUsage }>;
 }
 
 export interface SerpProvider {
   search(opts: { query: string; location: string; language: string; device: string; depth: number }): Promise<SerpResponse>;
 }
 
+/** `payload` is the compact JSON evidence bundle. `repair` is set on the single repair attempt. */
 export interface Recommender {
-  recommend(bundle: unknown): Promise<unknown>;
+  recommend(payload: Record<string, unknown>, repair?: { errors: string[]; previous: unknown }): Promise<{ recommendation: import("../pipeline/types").Recommendation; usage: AiUsage }>;
 }
