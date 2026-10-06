@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requirePageUser, hasRole } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import Header from "@/components/Header";
+import { failStaleGenerations } from "@/lib/pipeline/run";
 
 export const dynamic = "force-dynamic";
 const PAGE = 25;
@@ -10,6 +11,7 @@ export default async function History({ searchParams }: { searchParams: Promise<
   const user = await requirePageUser();
   const page = Math.max(1, Number((await searchParams).page) || 1);
   const where = user.role === "owner" ? {} : hasRole(user, "admin") ? { brandId: user.brandId! } : { userId: user.id };
+  await failStaleGenerations(where);
   const [rows, total] = await Promise.all([
     db.generation.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * PAGE, take: PAGE, include: { user: { select: { displayName: true } }, feedback: { orderBy: { createdAt: "desc" }, take: 1 } } }),
     db.generation.count({ where }),

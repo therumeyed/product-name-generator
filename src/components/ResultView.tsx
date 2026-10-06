@@ -27,13 +27,16 @@ export default function ResultView({ gen, canFeedback, isAdmin, onRetry }: { gen
   const [copied, setCopied] = useState(false);
   const [err, setErr] = useState("");
 
+  if (["pending", "extracting", "matching", "searching", "building"].includes(gen.status)) {
+    return <div className="card"><strong>Still working…</strong><p className="muted">Refresh in a few seconds. If this stays here for more than a couple of minutes it will be marked as failed.</p></div>;
+  }
   if (gen.status === "failed") {
     return (
       <div className="card">
         <strong>That didn&apos;t work</strong>
-        <p className="muted">{gen.errorCode === "ai_unavailable" || gen.errorCode === "timeout" ? "The AI service didn't respond. Your details and any search evidence are saved, so retrying won't repeat the paid searches." : "We couldn't produce a valid recommendation."}</p>
+        <p className="muted">{gen.errorCode === "config_error" ? "This tool isn't fully set up yet, so it couldn't run. Let your account manager know." : gen.errorCode === "ai_unavailable" || gen.errorCode === "timeout" ? "The AI service didn't respond. Your details and any search evidence are saved, so retrying won't repeat the paid searches." : "We couldn't produce a valid recommendation."}</p>
         {isAdmin && gen.errorMessage && <p className="err">Admin detail: {gen.errorMessage}</p>}
-        {onRetry && <button onClick={onRetry}>Retry</button>}
+        {onRetry && gen.errorCode !== "config_error" && <button onClick={onRetry}>Retry</button>}
       </div>
     );
   }

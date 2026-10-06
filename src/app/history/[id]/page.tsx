@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requirePageUser, hasRole, HttpError } from "@/lib/auth/guards";
 import { loadGenerationFor, presentGeneration } from "@/lib/pipeline/access";
 import Header from "@/components/Header";
+import { failStaleGenerations } from "@/lib/pipeline/run";
 import ResultView, { type Gen } from "@/components/ResultView";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,8 @@ export default async function HistoryItem({ params }: { params: Promise<{ id: st
   const { id } = await params;
   let g;
   try { g = await loadGenerationFor(user, id); } catch (e) { if (e instanceof HttpError) notFound(); throw e; }
+  await failStaleGenerations({ id });
+  g = await loadGenerationFor(user, id);
   const gen = JSON.parse(JSON.stringify(presentGeneration(g, user))) as Gen & { input: { freeText?: string } };
   return (
     <>

@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { createGeneration, runPipeline } from "@/lib/pipeline/run";
 import { MockFactExtractor, MockRecommender, MockSerpProvider } from "@/lib/providers/mock";
@@ -142,5 +142,34 @@ describe("access", () => {
     const otherBrand = await db.brand.create({ data: { name: "X", slug: "x" } });
     const outsider = await db.user.create({ data: { username: "out", displayName: "O", passwordHash: "x", role: "admin", brandId: otherBrand.id } });
     await expect(loadGenerationFor(su(outsider), g.id)).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("setup problems", () => {
+  it("missing provider settings fail the generation visibly (never stuck pending) and name the variables", async () => {
+    const { brand, user } = await seedBrand();
+    const saved = { ...process.env };
+    process.env.PROVIDER_MODE = "live";
+    delete process.env.ANTHROPIC_API_KEY; delete process.env.ANTHROPIC_MODEL; delete process.env.DATAFORSEO_LOGIN; delete process.env.DATAFORSEO_PASSWORD;
+    // env() caches after first success; the provider cache must not hide the misconfiguration either.
+    vi.resetModules();
+    try {
+      const run = await import("@/lib/pipeline/run");
+      const id = await run.createGeneration({ id: user.id, brandId: brand.id }, brand.id, dress);
+      await run.runPipeline(id); // no injected providers: uses the real factory
+      const g = await db.generation.findUniqueOrThrow({ where: { id } });
+      expect(g.status).toBe("failed");
+      expect(g.errorCode).toBe("config_error");
+      const msg = ((g.usage ?? {}) as { errorMessage?: string }).errorMessage ?? "";
+      expect(msg).toMatch(/ANTHROPIC_API_KEY.*ANTHROPIC_MODEL.*DATAFORSEO_LOGIN.*DATAFORSEO_PASSWORD/);
+    } finally { process.env = saved; }
+  });
+
+  it("stale in-progress generations are failed by the sweep", async () => {
+    const { brand, user } = await seedBrand();
+    const g = await db.generation.create({ data: { brandId: brand.id, userId: user.id, originalInput: dress, status: "searching", createdAt: new Date(Date.now() - 10 * 60_000) } });
+    const { failStaleGenerations } = await import("@/lib/pipeline/run");
+    await failStaleGenerations({ brandId: brand.id });
+    expect((await db.generation.findUniqueOrThrow({ where: { id: g.id } })).status).toBe("failed");
   });
 });

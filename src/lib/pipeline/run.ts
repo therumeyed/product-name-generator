@@ -19,6 +19,9 @@ const RANK = { low: 0, medium: 1, high: 2 } as const;
 const MAX_SERP_ITEMS_PER_QUERY = 7;
 const STALE_MS = 4 * 60_000;
 
+/** Setup problem (e.g. missing API variable). Message names variables only, never values. */
+class ConfigError extends Error {}
+
 type Stage = "pending" | "extracting" | "matching" | "searching" | "building" | "completed" | "needs_input" | "failed";
 const json = (v: unknown) => v as Prisma.InputJsonValue;
 
@@ -49,9 +52,12 @@ export async function createGeneration(user: { id: string; brandId: string | nul
  * The explicit, observable pipeline (brief section 6). Safe to call again on a failed generation: it resumes from
  * whatever evidence was already stored, so a Claude retry never repeats keyword retrieval or paid SERP calls.
  */
-export async function runPipeline(id: string, providers: Providers = getProviders()): Promise<void> {
+export async function runPipeline(id: string, injected?: Providers): Promise<void> {
   const t0 = Date.now();
   try {
+    // Resolved INSIDE the guard: a missing/misnamed API setting must fail the generation visibly, never leave it "pending".
+    let providers: Providers;
+    try { providers = injected ?? getProviders(); } catch (e) { throw new ConfigError(e instanceof Error ? e.message : "Provider configuration is invalid"); }
     const g = await db.generation.findUniqueOrThrow({ where: { id }, include: { brand: true } });
     const input = GenerationInput.parse(g.originalInput);
     const brand = parseBrandSettings(g.brand.settings);
@@ -157,9 +163,9 @@ export async function runPipeline(id: string, providers: Providers = getProvider
     const result = { recommendation: { ...rec, confidence, warnings: [...new Set(warnings)] }, meta: { serpStatus: bundle.serpStatus, limitedKeywordEvidence: bundle.limitedKeywordEvidence, datasetId: bundle.datasetId, orderFinal: bundle.order.final } };
     await setStage(id, "completed", { result: json(result), confidence, durationMs: Date.now() - t0 });
   } catch (e) {
-    const code = e instanceof AiError ? e.code : "internal_error";
+    const code = e instanceof AiError ? e.code : e instanceof ConfigError ? "config_error" : "internal_error";
     const message = e instanceof Error ? e.message : String(e);
-    if (!(e instanceof AiError)) console.error("pipeline error", id, e);
+    if (!(e instanceof AiError)) console.error("pipeline error", id, e instanceof Error ? e.message : e);
     await db.generation.update({ where: { id }, data: { status: "failed", errorCode: code, durationMs: Date.now() - t0 } }).catch(() => undefined);
     await addUsage(id, { errorMessage: message.slice(0, 500) }).catch(() => undefined);
   }
@@ -187,4 +193,12 @@ export async function failIfStale(id: string) {
   if (g && ["pending", "extracting", "matching", "searching", "building"].includes(g.status) && Date.now() - g.createdAt.getTime() > STALE_MS) {
     await db.generation.update({ where: { id }, data: { status: "failed", errorCode: "timeout" } });
   }
+}
+
+/** Fail anything stuck mid-run for too long (server restart, crash). Cheap; call before listing or showing generations. */
+export async function failStaleGenerations(where: Prisma.GenerationWhereInput = {}) {
+  await db.generation.updateMany({
+    where: { ...where, status: { in: ["pending", "extracting", "matching", "searching", "building"] }, createdAt: { lt: new Date(Date.now() - STALE_MS) } },
+    data: { status: "failed", errorCode: "timeout" },
+  });
 }

@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     if (!brandId || typeof brandId !== "string") throw new HttpError(400, "brandId required");
     assertBrandAccess(user, brandId);
     const id = await createGeneration(user, brandId, body);
-    void runPipeline(id);
+    void runPipeline(id).catch((e) => console.error("runPipeline crashed", id, e instanceof Error ? e.message : e));
     return Response.json({ id }, { status: 202 });
   } catch (e) {
     if (e instanceof z.ZodError) return Response.json({ error: "Enter what you'd call the product and choose a product type", issues: e.issues.map((i) => i.path.join(".")) }, { status: 400 });

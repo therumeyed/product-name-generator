@@ -15,7 +15,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     // Atomic claim: a double-click can't start two runs.
     const claimed = await db.generation.updateMany({ where: { id, status: "failed" }, data: { status: "pending", errorCode: null } });
     if (claimed.count === 0) throw new HttpError(409, "Already retrying");
-    void runPipeline(id);
+    void runPipeline(id).catch((e) => console.error("runPipeline crashed", id, e instanceof Error ? e.message : e));
     return Response.json({ id }, { status: 202 });
   } catch (e) {
     return errorResponse(e);
