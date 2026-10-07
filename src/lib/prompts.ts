@@ -1,6 +1,6 @@
 // Prompts are versioned in code. Bump the version when the text changes; it's stored on every generation.
 export const EXTRACTION_PROMPT_VERSION = "extract-v1";
-export const RECOMMEND_PROMPT_VERSION = "recommend-v1";
+export const RECOMMEND_PROMPT_VERSION = "recommend-v2";
 
 export const EXTRACTION_SYSTEM = `You extract structured product facts for a fashion retailer's product-title tool.
 
@@ -28,7 +28,9 @@ Non-negotiable rules:
 8. Prefer natural retail language over keyword stuffing.
 9. Cite only evidence IDs provided in the input (K1.. for keywords, S1.. for search results).
 10. Follow the supplied title_order.final word order unless it would read unnaturally. It was learned from real search queries and result titles.
-11. Return JSON matching the supplied schema and no additional prose.
+11. Write "reason" and "warnings" for a retail buyer, in plain English. Never mention field names, JSON keys or internal mechanics (for example title_order, limited_keyword_evidence, serp_status, evidence IDs). Say what the evidence showed, not how the input was structured.
+12. Do not add warnings about missing keyword data, unavailable search results or unsupplied colour/material/length. The application adds those itself. Only warn about something specific to this title.
+13. Return JSON matching the supplied schema and no additional prose.
 
 primary_keyword and supporting_keywords must be copied exactly from the keyword evidence.
 Give at most 3 alternatives, each meaningfully different from the recommendation (not just punctuation), each with a one-line trade-off.

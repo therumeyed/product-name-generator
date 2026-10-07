@@ -30,7 +30,7 @@ export class DataForSeoProvider implements SerpProvider {
         const ctl = new AbortController();
         const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
         const res = await this.fetchImpl(ENDPOINT, { method: "POST", headers: { Authorization: auth, "content-type": "application/json" }, body, signal: ctl.signal }).finally(() => clearTimeout(timer));
-        if (res.status === 401 || res.status === 403) throw new SerpProviderError("DataForSEO credentials rejected", false);
+        if (res.status === 401 || res.status === 403) throw new SerpProviderError(`DataForSEO credentials rejected (HTTP ${res.status}). Check the login and the API password (not the website password), and that the account has credit.`, false);
         if (res.status === 429 || res.status >= 500) throw new SerpProviderError(`DataForSEO ${res.status}`, true);
         if (!res.ok) throw new SerpProviderError(`DataForSEO ${res.status}`, false);
         return parseResponse(opts.query, await res.json());
