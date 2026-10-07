@@ -3,7 +3,7 @@ import { z } from "zod";
 const schema = z.object({
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
-  APP_BASE_URL: z.string().url().optional(),
+  APP_BASE_URL: z.string().optional(), // informational only; nothing depends on it, so a bad value must never block the app
   APP_NAME: z.string().default("Product Name Optimiser"),
   PROVIDER_MODE: z.enum(["live", "mock"]).default("live"),
   ANTHROPIC_API_KEY: z.string().optional(),
@@ -21,7 +21,9 @@ let cached: Env | undefined;
 /** Validated env, parsed lazily so `next build` doesn't need runtime secrets. */
 export function env(): Env {
   if (cached) return cached;
-  const parsed = schema.safeParse(process.env);
+  // A blank variable (common when a dashboard field is left empty) means "not set", not "set to empty".
+  const cleaned = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== undefined && v.trim() !== "").map(([k, v]) => [k, v!.trim()]));
+  const parsed = schema.safeParse(cleaned);
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Invalid environment configuration: ${problems}`);
