@@ -4,7 +4,7 @@ const base = { DATABASE_URL: "postgresql://x", AUTH_SECRET: "a".repeat(40), PROV
 const load = async (extra: Record<string, string>) => {
   vi.resetModules();
   const saved = process.env;
-  process.env = { ...base, ...extra } as NodeJS.ProcessEnv;
+  process.env = { ...base, ...extra } as unknown as NodeJS.ProcessEnv;
   try { return (await import("@/lib/env")).env(); } finally { process.env = saved; }
 };
 afterEach(() => vi.resetModules());
